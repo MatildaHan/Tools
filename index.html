@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F5EFE0">
 <meta name="mobile-web-app-capable" content="yes">
 <title>工具箱</title>
-<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/common.css?v=3">
 </head>
 <body>
 <div class="container">
@@ -16,7 +16,6 @@
         </div>
     </header>
 
-    <!-- 桌面导航 -->
     <nav class="tool-nav" id="toolNav" aria-label="工具选择">
         <button class="nav-btn active" data-tool="answer-book">答案之书</button>
         <button class="nav-btn" data-tool="music-player">音乐播放器</button>
@@ -27,7 +26,6 @@
         <button class="nav-btn" data-tool="history-events">历史事件</button>
     </nav>
 
-    <!-- 手机单行栏 -->
     <div class="mobile-topbar" id="mobileTopbar">
         <span class="current-name" id="currentName">答案之书</span>
         <button class="switch-btn" id="btnPicker" aria-label="切换工具">
@@ -48,7 +46,6 @@
     </main>
 </div>
 
-<!-- 手机全屏选择弹窗 -->
 <div class="picker" id="picker" aria-hidden="true">
     <div class="picker-header">
         <div class="picker-title">选 择</div>
@@ -56,47 +53,6 @@
     </div>
     <div class="picker-grid" id="pickerGrid"></div>
 </div>
-
-<style>
-/* 加载/错误覆盖层 */
-.loading-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(245, 239, 224, 0.85);
-    color: #6A6050;
-    font-size: 14px;
-    letter-spacing: 3px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s;
-    z-index: 5;
-}
-.loading-overlay.show { opacity: 1; }
-
-.error-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(245, 239, 224, 0.95);
-    z-index: 6;
-}
-.error-overlay[hidden] { display: none; }
-.error-box {
-    background: #F5EFE0;
-    padding: 24px 32px;
-    border: 1px solid #4A4A4A;
-    border-radius: 2px;
-    text-align: center;
-    max-width: 90%;
-}
-.error-box h2 { color: #B83B3B; font-size: 18px; margin-bottom: 8px; letter-spacing: 4px; }
-.error-box p { color: #6A6050; font-size: 13px; letter-spacing: 2px; margin-bottom: 16px; }
-</style>
 
 <script src="js/bridge.js"></script>
 <script>
@@ -202,8 +158,7 @@
         GameBridge.notifyPause(frame);
 
         buttons.forEach(b => {
-            const active = b.dataset.tool === id;
-            b.classList.toggle('active', active);
+            b.classList.toggle('active', b.dataset.tool === id);
         });
 
         currentName.textContent = tool.name;
