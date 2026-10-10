@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F5EFE0">
+<meta name="mobile-web-app-capable" content="yes">
+<title>工具箱</title>
+<link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+<div class="container">
+    <header class="site-header">
+        <div class="site-title">
+            工 具 箱<span class="sub">TOOLBOX</span>
+        </div>
+    </header>
+
+    <!-- 桌面导航 -->
+    <nav class="tool-nav" id="toolNav" aria-label="工具选择">
+        <button class="nav-btn active" data-tool="answer-book">答案之书</button>
+        <button class="nav-btn" data-tool="music-player">音乐播放器</button>
+        <button class="nav-btn" data-tool="cyber-muyu">赛博木鱼</button>
+        <button class="nav-btn" data-tool="english-study">英语学习</button>
+        <button class="nav-btn" data-tool="japanese-study">日语学习</button>
+        <button class="nav-btn" data-tool="poetry-recite">古诗词背诵</button>
+        <button class="nav-btn" data-tool="history-events">历史事件</button>
+    </nav>
+
+    <!-- 手机单行栏 -->
+    <div class="mobile-topbar" id="mobileTopbar">
+        <span class="current-name" id="currentName">答案之书</span>
+        <button class="switch-btn" id="btnPicker" aria-label="切换工具">
+            切换 ▾
+        </button>
+    </div>
+
+    <main class="content">
+        <iframe id="frame" title="工具内容" allow="fullscreen"></iframe>
+        <div id="loading" class="loading-overlay">加载中…</div>
+        <div id="errorOverlay" class="error-overlay" hidden>
+            <div class="error-box">
+                <h2>加载失败</h2>
+                <p id="errorMsg">无法加载页面</p>
+                <button class="btn" id="btnRetry">重试</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 手机全屏选择弹窗 -->
+<div class="picker" id="picker" aria-hidden="true">
+    <div class="picker-header">
+        <div class="picker-title">选 择</div>
+        <button class="picker-close" id="btnPickerClose">关闭</button>
+    </div>
+    <div class="picker-grid" id="pickerGrid"></div>
+</div>
+
+<style>
+/* 加载/错误覆盖层 */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(245, 239, 224, 0.85);
+    color: #6A6050;
+    font-size: 14px;
+    letter-spacing: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 5;
+}
+.loading-overlay.show { opacity: 1; }
+
+.error-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(245, 239, 224, 0.95);
+    z-index: 6;
+}
+.error-overlay[hidden] { display: none; }
+.error-box {
+    background: #F5EFE0;
+    padding: 24px 32px;
+    border: 1px solid #4A4A4A;
+    border-radius: 2px;
+    text-align: center;
+    max-width: 90%;
+}
+.error-box h2 { color: #B83B3B; font-size: 18px; margin-bottom: 8px; letter-spacing: 4px; }
+.error-box p { color: #6A6050; font-size: 13px; letter-spacing: 2px; margin-bottom: 16px; }
+</style>
+
+<script src="js/bridge.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    const TOOLS = [
+        { id: 'answer-book',     name: '答案之书' },
+        { id: 'music-player',    name: '音乐播放器' },
+        { id: 'cyber-muyu',      name: '赛博木鱼' },
+        { id: 'english-study',   name: '英语学习' },
+        { id: 'japanese-study',  name: '日语学习' },
+        { id: 'poetry-recite',   name: '古诗词背诵' },
+        { id: 'history-events',  name: '历史事件' }
+    ];
+    const STORAGE_KEY = 'toolbox.lastTool';
+
+    const frame = document.getElementById('frame');
+    const buttons = document.querySelectorAll('.nav-btn');
+    const loadingEl = document.getElementById('loading');
+    const errorOverlay = document.getElementById('errorOverlay');
+    const errorMsg = document.getElementById('errorMsg');
+    const btnRetry = document.getElementById('btnRetry');
+
+    const currentName = document.getElementById('currentName');
+    const btnPicker = document.getElementById('btnPicker');
+    const btnPickerClose = document.getElementById('btnPickerClose');
+    const picker = document.getElementById('picker');
+    const pickerGrid = document.getElementById('pickerGrid');
+
+    let currentTool = null;
+    let loadingTimer = null;
+
+    function findTool(id) {
+        return TOOLS.find(t => t.id === id) || null;
+    }
+
+    function buildPicker() {
+        pickerGrid.innerHTML = '';
+        TOOLS.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = 'picker-item';
+            btn.dataset.id = t.id;
+            btn.textContent = t.name;
+            btn.addEventListener('click', () => {
+                closePicker();
+                switchTool(t.id);
+            });
+            pickerGrid.appendChild(btn);
+        });
+        updatePickerActive();
+    }
+    function updatePickerActive() {
+        pickerGrid.querySelectorAll('.picker-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.id === currentTool);
+        });
+    }
+    function openPicker() {
+        buildPicker();
+        picker.classList.add('show');
+        picker.setAttribute('aria-hidden', 'false');
+    }
+    function closePicker() {
+        picker.classList.remove('show');
+        picker.setAttribute('aria-hidden', 'true');
+    }
+
+    function pickInitial() {
+        const hash = (location.hash || '').replace(/^#/, '');
+        if (findTool(hash)) return hash;
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (findTool(saved)) return saved;
+        } catch (e) {}
+        return TOOLS[0].id;
+    }
+
+    function showLoading() {
+        loadingEl.classList.add('show');
+        clearTimeout(loadingTimer);
+        loadingTimer = setTimeout(() => {
+            if (loadingEl.classList.contains('show')) {
+                showError('加载超时，请检查网络');
+            }
+        }, 12000);
+    }
+    function hideLoading() {
+        loadingEl.classList.remove('show');
+        clearTimeout(loadingTimer);
+    }
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorOverlay.hidden = false;
+        hideLoading();
+    }
+    function hideError() { errorOverlay.hidden = true; }
+
+    function switchTool(id, { updateHash = true } = {}) {
+        const tool = findTool(id);
+        if (!tool) return;
+        if (id === currentTool) return;
+
+        GameBridge.notifyPause(frame);
+
+        buttons.forEach(b => {
+            const active = b.dataset.tool === id;
+            b.classList.toggle('active', active);
+        });
+
+        currentName.textContent = tool.name;
+        updatePickerActive();
+
+        showLoading();
+        hideError();
+        frame.src = `tools/${id}.html`;
+
+        currentTool = id;
+        try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
+        if (updateHash && location.hash !== '#' + id) {
+            history.replaceState(null, '', '#' + id);
+        }
+    }
+
+    frame.addEventListener('load', () => {
+        hideLoading();
+        try { frame.contentWindow.focus(); } catch (e) {}
+    });
+    frame.addEventListener('error', () => showError('无法加载页面'));
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => switchTool(btn.dataset.tool));
+    });
+
+    btnPicker.addEventListener('click', openPicker);
+    btnPickerClose.addEventListener('click', closePicker);
+    picker.addEventListener('click', (e) => {
+        if (e.target === picker) closePicker();
+    });
+
+    window.addEventListener('hashchange', () => {
+        const hash = (location.hash || '').replace(/^#/, '');
+        if (findTool(hash) && hash !== currentTool) {
+            switchTool(hash, { updateHash: false });
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) GameBridge.notifyPause(frame);
+    });
+
+    btnRetry.addEventListener('click', () => {
+        hideError();
+        const id = currentTool;
+        currentTool = null;
+        switchTool(id);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && picker.classList.contains('show')) closePicker();
+    });
+
+    const initial = pickInitial();
+    buttons.forEach(b => {
+        b.classList.toggle('active', b.dataset.tool === initial);
+    });
+    currentName.textContent = findTool(initial).name;
+    currentTool = null;
+    switchTool(initial, { updateHash: false });
+    if (location.hash !== '#' + initial) {
+        history.replaceState(null, '', '#' + initial);
+    }
+})();
+</script>
+</body>
+</html>
