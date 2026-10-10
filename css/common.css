@@ -2,7 +2,7 @@
    全局变量
    ============================================================ */
 :root {
-    --primary: #B83B3B;             /* 朱红，主色调 */
+    --primary: #B83B3B;
     --primary-dim: rgba(184, 59, 59, 0.12);
     --primary-mid: rgba(184, 59, 59, 0.25);
     --bg-glass: rgba(245, 239, 224, 0.85);
@@ -88,27 +88,27 @@ body.embedded {
 }
 
 /* ============================================================
-   顶部：标题 + 工具导航
+   顶部：标题
    ============================================================ */
 .site-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 8px 4px;
     flex-shrink: 0;
 }
 .site-title {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
-    letter-spacing: 4px;
+    letter-spacing: 6px;
     color: #1A1A1A;
 }
 .site-title .sub {
     font-size: 12px;
     color: #8A7A60;
-    letter-spacing: 3px;
-    margin-left: 8px;
+    letter-spacing: 4px;
+    margin-left: 10px;
     font-weight: 400;
+    vertical-align: middle;
 }
 
 /* ============================================================
